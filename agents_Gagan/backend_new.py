@@ -25,7 +25,7 @@ async def run_qa_flow(
         token: str = Depends(api_key_header)
 ):
     if token != API_TOKEN:
-        raise HTTPException(status_code=403, detail="Unauthorized Access")
+        raise HTTPException(status_code=403, detail="Unauthorized Access Not Allowed")
 
     locators_data = []
     if locator_file:
@@ -92,7 +92,7 @@ async def run_qa_flow(
             4. Do NOT use 'driver.quit()' or 'driver.close()' anywhere in the script. I want to manually inspect the result.
 
             --- FINAL REPORT TEMPLATE (EDITOR LOOK) ---
-            Your response must start with 'MISSION REPORT ACCOMPLISHED, SIR! 🤖'
+            Your response must start with 'MISSION REPORT ACCOMPLISHED 🤖'
             Then use this structure:
             # 📊 MISSION SUMMARY
             - **Status:** [SUCCESS 🟢 / FAILED 🔴]
