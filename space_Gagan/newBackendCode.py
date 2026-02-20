@@ -16,7 +16,7 @@ app = FastAPI()
 llm = ChatOpenAI(model="gpt-4o")
 
 
-# --- TOOL 1: Structure Analyzer ---
+# ---TOOL 1: Structure Analyzer---
 class StructureAnalyzerTool(BaseTool):
     name: str = "structure_analyzer"
     description: str = "Scans the local directory and returns the folder structure. Use this to understand the project layout."

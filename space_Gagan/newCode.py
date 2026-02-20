@@ -93,7 +93,6 @@ with st.container(border=True):
 
         # st.info(f"📍 Location: {p_path_val}/{proj['project_name']}")
 
-        # Exclusive Checkboxes
         if 'modify' not in st.session_state: st.session_state.modify = False
         if 'create' not in st.session_state: st.session_state.create = False
 
