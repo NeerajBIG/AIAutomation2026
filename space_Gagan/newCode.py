@@ -171,7 +171,6 @@ with st.container(border=True):
                             "language": proj['lang'],
                             "framework": proj['fw'],
                             "project_path": p_path_val,
-                            # JSON string bana kar bhej rahe hain taaki Agent ko sari files dikhein
                             "bdd_content": json.dumps(all_files_data)
                         }
                         try:
