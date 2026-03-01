@@ -228,7 +228,7 @@ def sidebar_navigationAdmin():
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
     st.sidebar.text(result)
-    if not result:
+    if result[0]["ButtonColor"] is None:
         result = [{'ButtonColor': '#ea6c0b'}]
     st.sidebar.text(result)
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
