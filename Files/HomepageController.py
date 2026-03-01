@@ -8,7 +8,7 @@ from DBConnector import run_db_setup
 def show_homepageGuest():
     from MainApp import controllerFun
     cookie_controller = controllerFun()
-    text = "BIG Automation Tool"
+    text = "BIG Automation AI Tool"
     num_chars = len(text)
     flashing_html = "".join([
         f'<span class="flashing-text">{char}</span>' if char != " " else '<span class="flashing-text">&nbsp;</span>'
@@ -22,7 +22,7 @@ def show_homepageGuest():
                 .flashing-text {{
                     font-size: 60px;
                     font-weight: none;
-                    color: navy;  
+                    color: #0808ec;
                     display: inline-block;
                     opacity: 1;
                     animation: flash 1s forwards;
@@ -37,6 +37,7 @@ def show_homepageGuest():
                 }}
             </style>
         """, unsafe_allow_html=True)
+
     st.markdown(f'<p>{flashing_html}</p>', unsafe_allow_html=True)
 
     st.title(f"Hi, {cookie_controller.get('role_user')}!")

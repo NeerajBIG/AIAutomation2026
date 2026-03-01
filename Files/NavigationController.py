@@ -31,6 +31,7 @@ def navigationGuest():
     from DBConnector import db
     db.connect()
     GetSessionTime = sessionTime()
+    session_user = 0
 
     local_timezone = pytz.timezone('US/Eastern')
     current_datetime = datetime.now(local_timezone)
@@ -64,14 +65,17 @@ def navigationGuest():
     except Exception as e:
         st.error(f"Database connection error. Please refresh the browser and try again.")
 
-    page = st.sidebar.radio("Choose a page", ["Home", "Signup", "Login"])
+    page = st.sidebar.radio("Choose a page", ["Home", "Login"])
+
     if page == "Home":
         from HomepageController import show_homepageGuest
         show_homepageGuest()
+
     #--- Signup code hidden
     # elif page == "Signup":
     #     from SignupController import signup
     #     signup()
+
     elif page == "Login":
         from LoginController import login
         login()
@@ -104,22 +108,10 @@ def sidebar_navigationQA():
         pass
 
     st.sidebar.markdown(f"""
-        <div style="background-color: #4CAF50; color: white; padding: 1px 10px; border-radius: 8px; text-align: center; width: 180px; margin: auto;">
+        <div style="background-color: #4CAF50; color: white; padding: 1px 10px; border-radius: 8px; text-align: center; width: 180px; margin: 10px auto 10px auto;">
         <h5 style="margin: 10; font-size: 14px;">Active since {minutes_difference:.2f} minutes</h5>
         </div>
         """, unsafe_allow_html=True)
-
-    st.sidebar.title("NavigationQA")
-    page = st.sidebar.radio("Choose a page",
-                            ["Home", "Locator Extractor", "BDD to Code"])
-    if page == "Home":
-        show_homepageQA()
-    elif page == "Locator Extractor":
-        from ElementLocator import run_app
-        run_app()
-    elif page == "BDD to Code":
-        from BDDToCode import run_app
-        run_app()
 
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
@@ -127,7 +119,6 @@ def sidebar_navigationQA():
         db.update_data(update_query, update_params)
         db.close()
 
-        # Clear cookies
         cookie_controller.set('role_user', "Guest")
         cookie_controller.set('user_name', "Unknown")
         cookie_controller.set('user_id', "Unknown")
@@ -139,6 +130,41 @@ def sidebar_navigationQA():
         st.sidebar.success("You have been logged out!")
         time.sleep(2)
         streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+    st.sidebar.title("Navigation Panel")
+    page = st.sidebar.radio("Choose a page",
+                            ["Home", "Locator Extractor", "BDD to Code"])
+
+    color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
+    if st.sidebar.button("Save Button Color"):
+        try:
+            db.connect()
+            update_query = """
+                        UPDATE SessionDetails 
+                        SET ButtonColor = ?
+                        WHERE userid = ?
+                    """
+            update_params = (
+                color,
+                cookie_controller.get('user_id')
+            )
+            db.update_data(update_query, update_params)
+            db.close()
+            st.sidebar.success("Button color saved successfully!")
+            time.sleep(2)
+            streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+        except Exception as e:
+            st.sidebar.error(f"Error saving color: {e}")
+
+    if page == "Home":
+        show_homepageQA()
+    elif page == "Locator Extractor":
+        from ElementLocator import run_app
+        run_app()
+    elif page == "BDD to Code":
+        from BDDToCode import run_app
+        run_app()
 
 
 def sidebar_navigationAdmin():
@@ -173,20 +199,10 @@ def sidebar_navigationAdmin():
     minutes_difference = time_difference.total_seconds() / 60
 
     st.sidebar.markdown(f"""
-    <div style="background-color: #4CAF50; color: white; padding: 1px 10px; border-radius: 8px; text-align: center; width: 180px; margin: auto;">
+    <div style="background-color: #4CAF50; color: white; padding: 1px 10px; border-radius: 8px; text-align: center; width: 180px; margin: 10px auto 10px auto;">
     <h5 style="margin: 10; font-size: 14px;">Active since {minutes_difference:.2f} minutes</h5>
     </div>
     """, unsafe_allow_html=True)
-
-    page = st.sidebar.radio("Choose a page", ["Home", "Add Users", "DB Access"])
-    if page == "Home":
-        show_homepageAdmin()
-    elif page == "Add Users":
-        from AddUsersController import addUser
-        addUser()
-    elif page == "DB Access":
-        from DBAdmin import run_sqlite_admin_portal
-        run_sqlite_admin_portal()
 
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
@@ -206,3 +222,36 @@ def sidebar_navigationAdmin():
         st.sidebar.success("You have been logged out!")
         time.sleep(2)
         streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+    page = st.sidebar.radio("Choose a page", ["Home", "Add Users", "DB Access"])
+
+    color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
+    if st.sidebar.button("Save Button Color"):
+        try:
+            db.connect()
+            update_query = """
+                    UPDATE SessionDetails 
+                    SET ButtonColor = ?
+                    WHERE userid = ?
+                """
+            update_params = (
+                color,
+                cookie_controller.get('user_id')
+            )
+            db.update_data(update_query, update_params)
+            db.close()
+            st.sidebar.success("Button color saved successfully!")
+            time.sleep(2)
+            streamlit_js_eval(js_expressions="parent.window.location.reload()")
+
+        except Exception as e:
+            st.sidebar.error(f"Error saving color: {e}")
+
+    if page == "Home":
+        show_homepageAdmin()
+    elif page == "Add Users":
+        from AddUsersController import addUser
+        addUser()
+    elif page == "DB Access":
+        from DBAdmin import run_sqlite_admin_portal
+        run_sqlite_admin_portal()
