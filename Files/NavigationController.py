@@ -227,17 +227,19 @@ def sidebar_navigationAdmin():
     """, unsafe_allow_html=True)
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
+    st.sidebar.text(result)
     if not result:
         result = [{'ButtonColor': '#ea6c0b'}]
+    st.sidebar.text(result)
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
         st.markdown(f"""
-                                <style>
-                                div.stButton > button:first-child {{
-                                    background-color: {result[0]["ButtonColor"]};
-                                    color: white;
-                                }}
-                                </style>
-                            """, unsafe_allow_html=True)
+                    <style>
+                    div.stButton > button:first-child {{
+                        background-color: {result[0]["ButtonColor"]};
+                        color: white;
+                    }}
+                    </style>
+                    """, unsafe_allow_html=True)
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
         update_params = ('0', current_datetime, cookie_controller.get('user_id'))
         db.update_data(update_query, update_params)
