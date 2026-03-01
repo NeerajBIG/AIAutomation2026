@@ -114,17 +114,18 @@ def sidebar_navigationQA():
         """, unsafe_allow_html=True)
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    if not result:
+    if result[0]["ButtonColor"] is None:
         result = [{'ButtonColor': '#ea6c0b'}]
+
+    st.markdown(f"""
+        <style>
+        section[data-testid="stSidebar"] button {{
+            background-color: {result[0]["ButtonColor"]} !important;
+            color: white !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
-        st.markdown(f"""
-                                <style>
-                                div.stButton > button:first-child {{
-                                    background-color: {result[0]["ButtonColor"]};
-                                    color: white;
-                                }}
-                                </style>
-                            """, unsafe_allow_html=True)
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
         update_params = ('0', current_datetime, cookie_controller.get('user_id'))
         db.update_data(update_query, update_params)
@@ -147,18 +148,18 @@ def sidebar_navigationQA():
                             ["Home", "Locator Extractor", "BDD to Code"])
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
-    result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    if not result:
+    if result[0]["ButtonColor"] is None:
         result = [{'ButtonColor': '#ea6c0b'}]
+
+    st.markdown(f"""
+        <style>
+        section[data-testid="stSidebar"] button {{
+            background-color: {result[0]["ButtonColor"]} !important;
+            color: white !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
     if st.sidebar.button("Save Button Color"):
-        st.markdown(f"""
-                        <style>
-                        div.stButton > button:first-child {{
-                            background-color: {result[0]["ButtonColor"]};
-                            color: white;
-                        }}
-                        </style>
-                    """, unsafe_allow_html=True)
         try:
             db.connect()
             update_query = """
@@ -227,19 +228,18 @@ def sidebar_navigationAdmin():
     """, unsafe_allow_html=True)
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    st.sidebar.text(result)
     if result[0]["ButtonColor"] is None:
         result = [{'ButtonColor': '#ea6c0b'}]
-    st.sidebar.text(result)
+
+    st.markdown(f"""
+        <style>
+        section[data-testid="stSidebar"] button {{
+            background-color: {result[0]["ButtonColor"]} !important;
+            color: white !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
-        st.markdown(f"""
-                    <style>
-                    div.stButton > button:first-child {{
-                        background-color: {result[0]["ButtonColor"]};
-                        color: white;
-                    }}
-                    </style>
-                    """, unsafe_allow_html=True)
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
         update_params = ('0', current_datetime, cookie_controller.get('user_id'))
         db.update_data(update_query, update_params)
@@ -262,17 +262,18 @@ def sidebar_navigationAdmin():
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    if not result:
+    if result[0]["ButtonColor"] is None:
         result = [{'ButtonColor': '#ea6c0b'}]
+
+    st.markdown(f"""
+        <style>
+        section[data-testid="stSidebar"] button {{
+            background-color: {result[0]["ButtonColor"]} !important;
+            color: white !important;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
     if st.sidebar.button("Save Button Color"):
-        st.markdown(f"""
-                                <style>
-                                div.stButton > button:first-child {{
-                                    background-color: {result[0]["ButtonColor"]};
-                                    color: white;
-                                }}
-                                </style>
-                            """, unsafe_allow_html=True)
         try:
             db.connect()
             update_query = """
