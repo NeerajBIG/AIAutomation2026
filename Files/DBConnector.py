@@ -45,7 +45,7 @@ class LocalSQLiteDatabase:
                 CREATE TABLE IF NOT EXISTS SessionDetails (
                     userid INTEGER PRIMARY KEY AUTOINCREMENT,
                     SessionActive INTEGER,
-                    SessionTime DATETIME
+                    SessionTime DATETIME,
                     ButtonColor TEXT
                 )
             """)
