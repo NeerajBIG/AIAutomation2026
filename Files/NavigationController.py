@@ -113,7 +113,19 @@ def sidebar_navigationQA():
         </div>
         """, unsafe_allow_html=True)
 
+    result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
+    db.close()
+    if not result:
+        result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
+        st.markdown(f"""
+                                <style>
+                                div.stButton > button:first-child {{
+                                    background-color: {result[0]["ButtonColor"]};
+                                    color: white;
+                                }}
+                                </style>
+                            """, unsafe_allow_html=True)
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
         update_params = ('0', current_datetime, cookie_controller.get('user_id'))
         db.update_data(update_query, update_params)
@@ -136,7 +148,19 @@ def sidebar_navigationQA():
                             ["Home", "Locator Extractor", "BDD to Code"])
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
+    result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
+    db.close()
+    if not result:
+        result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Save Button Color"):
+        st.markdown(f"""
+                        <style>
+                        div.stButton > button:first-child {{
+                            background-color: {result[0]["ButtonColor"]};
+                            color: white;
+                        }}
+                        </style>
+                    """, unsafe_allow_html=True)
         try:
             db.connect()
             update_query = """
@@ -204,7 +228,19 @@ def sidebar_navigationAdmin():
     </div>
     """, unsafe_allow_html=True)
 
+    result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
+    db.close()
+    if not result:
+        result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
+        st.markdown(f"""
+                                <style>
+                                div.stButton > button:first-child {{
+                                    background-color: {result[0]["ButtonColor"]};
+                                    color: white;
+                                }}
+                                </style>
+                            """, unsafe_allow_html=True)
         update_query = "UPDATE SessionDetails SET SessionActive = ?, SessionTime = ? WHERE userid = ?"
         update_params = ('0', current_datetime, cookie_controller.get('user_id'))
         db.update_data(update_query, update_params)
@@ -226,7 +262,19 @@ def sidebar_navigationAdmin():
     page = st.sidebar.radio("Choose a page", ["Home", "Add Users", "DB Access"])
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
+    result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
+    db.close()
+    if not result:
+        result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Save Button Color"):
+        st.markdown(f"""
+                                <style>
+                                div.stButton > button:first-child {{
+                                    background-color: {result[0]["ButtonColor"]};
+                                    color: white;
+                                }}
+                                </style>
+                            """, unsafe_allow_html=True)
         try:
             db.connect()
             update_query = """
