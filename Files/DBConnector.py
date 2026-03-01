@@ -46,6 +46,7 @@ class LocalSQLiteDatabase:
                     userid INTEGER PRIMARY KEY AUTOINCREMENT,
                     SessionActive INTEGER,
                     SessionTime DATETIME
+                    ButtonColor TEXT
                 )
             """)
             self.connection.commit()
