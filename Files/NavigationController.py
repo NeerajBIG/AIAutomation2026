@@ -114,7 +114,6 @@ def sidebar_navigationQA():
         """, unsafe_allow_html=True)
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    db.close()
     if not result:
         result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
@@ -149,7 +148,6 @@ def sidebar_navigationQA():
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    db.close()
     if not result:
         result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Save Button Color"):
@@ -229,7 +227,6 @@ def sidebar_navigationAdmin():
     """, unsafe_allow_html=True)
 
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    db.close()
     if not result:
         result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Logout") or minutes_difference > GetSessionTime:
@@ -263,7 +260,6 @@ def sidebar_navigationAdmin():
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
     result = db.fetch_data(select_query, (cookie_controller.get('user_id'),))
-    db.close()
     if not result:
         result = [{'ButtonColor': '#ea6c0b'}]
     if st.sidebar.button("Save Button Color"):
