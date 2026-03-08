@@ -1,5 +1,8 @@
 import sys
 from os.path import dirname, join, abspath
+
+from Files.FileMerger import run_app
+
 sys.path.insert(0, abspath(join(dirname(__file__), '..')))
 import streamlit as st
 import pytz
@@ -145,7 +148,7 @@ def sidebar_navigationQA():
 
     st.sidebar.title("Navigation Panel")
     page = st.sidebar.radio("Choose a page",
-                            ["Home", "Locator Extractor", "BDD to Code"])
+                            ["Home", "Locator Extractor", "BDD to Code", "File Merger", "Code Helper"])
 
     color = st.sidebar.color_picker("Change buttons color?", "#ea6c0b")
     if result[0]["ButtonColor"] is None:
@@ -188,7 +191,12 @@ def sidebar_navigationQA():
     elif page == "BDD to Code":
         from BDDToCode import run_app
         run_app()
-
+    elif page == "File Merger":
+        from FileMergerFinal import run_app
+        run_app()
+    elif page == "Code Helper":
+        from FileMerger import run_app
+        run_app()
 
 def sidebar_navigationAdmin():
     global minutes_difference, current_datetime, GetSessionTime
