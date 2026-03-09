@@ -30,6 +30,29 @@ def get_projects():
 
 
 # -------------------------
+# INSTALL REQUIREMENTS
+# -------------------------
+
+def install_requirements(project_path):
+    req_file = os.path.join(project_path, "requirements.txt")
+    if os.path.exists(req_file):
+        st.info("📦 Installing requirements.txt...")
+        result = subprocess.run(
+            ["pip", "install", "-r", req_file],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            st.success("✅ Requirements installed successfully!")
+        else:
+            st.error(f"❌ Failed to install requirements:\n{result.stderr}")
+        with st.expander("📋 Installation Logs", expanded=False):
+            st.code(result.stdout + result.stderr)
+    else:
+        st.warning(f"⚠️ No requirements.txt found at: {project_path}")
+
+
+# -------------------------
 # TEST FILE DISCOVERY
 # -------------------------
 
@@ -115,7 +138,7 @@ def parse_results(output):
 # LIVE COMMAND RUNNER
 # -------------------------
 
-def run_live_command(cmd):
+def run_live_command(cmd, log_placeholder):
 
     process = subprocess.Popen(
         cmd,
@@ -126,11 +149,10 @@ def run_live_command(cmd):
     )
 
     output_lines = []
-    placeholder = st.empty()
 
     for line in process.stdout:
         output_lines.append(line)
-        placeholder.code("".join(output_lines))
+        log_placeholder.code("".join(output_lines), language="bash")
 
     process.wait()
 
@@ -145,7 +167,7 @@ def run_app():
 
     st.set_page_config(page_title="Test Execution Dashboard", layout="wide")
 
-    st.title("🧪 Test Execution Dashboard")
+    st.title("Test Execution Dashboard")
 
     if "history" not in st.session_state:
         st.session_state.history = []
@@ -158,15 +180,20 @@ def run_app():
 
     project_names = [p["project_name"] for p in projects]
 
-    selected_project_name = st.selectbox(
-        "Select Project",
-        project_names
-    )
+    selected_project_name = st.selectbox("Select Project", project_names)
 
     project = next(p for p in projects if p["project_name"] == selected_project_name)
 
     project_path = project["project_path"]
     project_fw = project["project_fw"]
+
+    # -------------------------
+    # INSTALL REQUIREMENTS
+    # -------------------------
+
+    install_requirements(project_path)
+
+    st.markdown("---")
 
     # -------------------------
     # LOAD TEST FILES
@@ -180,47 +207,84 @@ def run_app():
 
     file_map = {os.path.basename(f): f for f in test_files}
 
-    selected_test_name = st.selectbox(
-        "Select Test File",
-        list(file_map.keys())
-    )
+    selected_test_name = st.selectbox("Select Test File", list(file_map.keys()))
 
     selected_test = file_map[selected_test_name]
-
-    col1, col2 = st.columns(2)
-
     report_name = "report.html"
 
     if project_fw == "Pytest":
         report_name = "pytest_report.html"
-
     elif project_fw == "Behave":
         report_name = "behave_report.html"
 
     report_path = os.path.join(project_path, report_name)
 
     # -------------------------
-    # RUN SINGLE TEST
+    # RUN MODE - RADIO + BUTTON
     # -------------------------
 
-    with col1:
+    run_mode = st.radio(
+        "Select Run Mode",
+        options=["▶ Run Selected Test", "🚀 Run All Tests"],
+        horizontal=True
+    )
 
-        if st.button("▶ Run Selected Test", use_container_width=True):
+    run_button = st.button("▶ Run", use_container_width=True)
+
+    run_single = run_button and run_mode == "▶ Run Selected Test"
+    run_all = run_button and run_mode == "🚀 Run All Tests"
+
+    # ===================================================
+    # FULL WIDTH CONTAINER
+    # ===================================================
+
+    full_width = st.container()
+
+    with full_width:
+
+        st.markdown("---")
+        st.markdown("### Test Results")
+
+        m1, m2, m3 = st.columns(3)
+        total_ph = m1.empty()
+        passed_ph = m2.empty()
+        failed_ph = m3.empty()
+
+        st.markdown("### Test Logs")
+        cmd_placeholder = st.empty()
+        spinner_placeholder = st.empty()
+        log_placeholder = st.empty()
+
+        # -------------------------
+        # RUN SINGLE TEST
+        # -------------------------
+
+        if run_single:
+
+            # Start Time
+            start_time = datetime.now()
+            start_time_str = start_time.strftime("%H:%M:%S")
+
+            if st.session_state.history:
+                if "history" in st.session_state:
+                    st.session_state.history = []
 
             cmd = build_test_command(project_fw, selected_test, report_path)
+            cmd_placeholder.code(" ".join(cmd))
 
-            st.code(" ".join(cmd))
-
-            with st.spinner("Running test..."):
-                output = run_live_command(cmd)
+            with spinner_placeholder.container():
+                with st.spinner("Running test..."):
+                    output = run_live_command(cmd, log_placeholder)
 
             total, passed, failed = parse_results(output)
 
-            m1, m2, m3 = st.columns(3)
+            total_ph.metric("Total", total)
+            passed_ph.metric("✅ Passed", passed)
+            failed_ph.metric("❌ Failed", failed)
 
-            m1.metric("Total", total)
-            m2.metric("Passed", passed)
-            m3.metric("Failed", failed)
+            end_time = datetime.now()
+            total_runtime = end_time - start_time
+            runtime_str = str(total_runtime).split(".")[0]
 
             st.session_state.history.append({
                 "Project": selected_project_name,
@@ -228,19 +292,17 @@ def run_app():
                 "Total": total,
                 "Passed": passed,
                 "Failed": failed,
-                "Time": datetime.now().strftime("%H:%M:%S")
+                "Time": runtime_str
             })
 
-            with st.expander("📄 Test Logs", expanded=True):
-                st.code(output)
+        # -------------------------
+        # RUN ALL TESTS
+        # -------------------------
 
-    # -------------------------
-    # RUN ALL TESTS
-    # -------------------------
-
-    with col2:
-
-        if st.button("🚀 Run All Tests", use_container_width=True):
+        if run_all:
+            if st.session_state.history:
+                if "history" in st.session_state:
+                    st.session_state.history = []
 
             if project_fw == "Behave":
                 tests_dir = os.path.join(project_path, "features")
@@ -248,19 +310,17 @@ def run_app():
                 tests_dir = os.path.join(project_path, "tests")
 
             cmd = build_test_command(project_fw, tests_dir, report_path)
+            cmd_placeholder.code(" ".join(cmd))
 
-            st.code(" ".join(cmd))
-
-            with st.spinner("Running full suite..."):
-                output = run_live_command(cmd)
+            with spinner_placeholder.container():
+                with st.spinner("Running full suite..."):
+                    output = run_live_command(cmd, log_placeholder)
 
             total, passed, failed = parse_results(output)
 
-            m1, m2, m3 = st.columns(3)
-
-            m1.metric("Total", total)
-            m2.metric("Passed", passed)
-            m3.metric("Failed", failed)
+            total_ph.metric("Total", total)
+            passed_ph.metric("✅ Passed", passed)
+            failed_ph.metric("❌ Failed", failed)
 
             st.session_state.history.append({
                 "Project": selected_project_name,
@@ -271,30 +331,45 @@ def run_app():
                 "Time": datetime.now().strftime("%H:%M:%S")
             })
 
-    # -------------------------
-    # HTML REPORT VIEWER
-    # -------------------------
+        # -------------------------
+        # HTML REPORT VIEWER
+        # -------------------------
 
-    if os.path.exists(report_path):
+        if os.path.exists(report_path):
 
-        with st.expander("📊 HTML Report"):
+            st.markdown("---")
 
-            st.success("HTML Report Generated")
+            with st.expander("📊 HTML Report", expanded=False):
 
-            c1, c2 = st.columns(2)
+                st.success("✅ HTML Report Generated")
 
-            with c1:
-                if st.button("🌐 Open Report"):
-                    webbrowser.open(report_path)
+                c1, c2 = st.columns(2)
 
-            with c2:
-                with open(report_path, "rb") as f:
-                    st.download_button(
-                        "⬇ Download Report",
-                        f,
-                        file_name=os.path.basename(report_path),
-                        mime="text/html"
-                    )
+                with c1:
+                    if st.button("🌐 Open Report"):
+                        webbrowser.open(report_path)
+
+                with c2:
+                    with open(report_path, "rb") as f:
+                        st.download_button(
+                            "⬇ Download Report",
+                            f,
+                            file_name=os.path.basename(report_path),
+                            mime="text/html"
+                        )
+
+        # -------------------------
+        # RUN HISTORY
+        # -------------------------
+
+        if st.session_state.history:
+
+            st.markdown("---")
+            st.markdown("### Run History")
+            st.dataframe(
+                st.session_state.history,
+                use_container_width=True
+            )
 
 
 # -------------------------

@@ -67,7 +67,7 @@ def run_sqlite_admin_portal():
         ]
 
         blocked_writes = [
-            r"\bdelete\b"
+            r"\bdeletea\b"
         ]
 
         patterns = blocked_keywords + blocked_writes
