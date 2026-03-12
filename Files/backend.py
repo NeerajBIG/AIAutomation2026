@@ -48,6 +48,7 @@ class GenerateCodeRequest(BaseModel):
 # =========================
 # SELENIUM 4 PYTHON STANDARDS
 # =========================
+
 SELENIUM_STANDARDS_PYTHON = """
 IMPORTANT - Follow Selenium 4 Python standards strictly:
 
@@ -300,9 +301,17 @@ def parse_json_result(result: str, fallback_key: str) -> dict:
         return json.loads(result)
     except json.JSONDecodeError:
         clean = result.replace("```json", "").replace("```", "").strip()
+
         try:
             return json.loads(clean)
         except json.JSONDecodeError:
+            # If fallback is failure file, create it
+            if "tests/generated_test" in fallback_key.lower() :
+                with open("FailedOperation.txt", "w", encoding="utf-8") as f:
+                    f.write("❌ Pytest Code Generation Failed\n\n")
+                    f.write("Reason: OpenAI response was not valid JSON.\n\n")
+                    f.write("Raw Response:\n")
+                    f.write(result)
             return {fallback_key: result}
 
 

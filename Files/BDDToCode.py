@@ -1,4 +1,5 @@
 import os
+import subprocess
 import time
 import json
 import re
@@ -171,14 +172,186 @@ def get_unique_latest_bdd_files(project_id):
     return [dict(r) for r in latest_files]
 
 
-def create_project_structure(project_dir, lang, fw, base_url, login_username, login_password):
+def create_static_framework_files(project_dir, tool, lang, fw):
+    files_to_create = {}
+
+    # ==========================
+    # SELENIUM + PYTHON + PYTEST
+    # ==========================
+    if tool == "Selenium" and lang == "Python" and fw == "Pytest":
+
+        files_to_create = {
+
+            "config/config.py": """
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
+USERNAME = os.getenv("LOGIN_USERNAME")
+PASSWORD = os.getenv("LOGIN_PASSWORD")
+""",
+
+            "conftest.py": """
+import pytest
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
+@pytest.fixture(scope="session")
+def browser():
+    options = Options()
+    options.add_argument("--start-maximized")
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
+    yield driver
+    driver.quit()
+""",
+
+            "requirements.txt": """
+pytest
+selenium
+python-dotenv
+"""
+        }
+
+    # ==========================
+    # SELENIUM + PYTHON + BEHAVE
+    # ==========================
+
+    elif tool == "Selenium" and lang == "Python" and fw == "Behave":
+
+        files_to_create = {
+
+            "features/environment.py": """
+from selenium import webdriver
+
+def before_scenario(context, scenario):
+    context.driver = webdriver.Chrome()
+
+def after_scenario(context, scenario):
+    context.driver.quit()
+""",
+
+            "requirements.txt": """
+behave
+selenium
+python-dotenv
+"""
+        }
+
+    # ==========================
+    # SELENIUM + JAVA + TESTNG
+    # ==========================
+
+    elif tool == "Selenium" and lang == "Java" and fw == "TestNG":
+
+        files_to_create = {
+
+            "pom.xml": """
+<project>
+  <dependencies>
+
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.18.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.8.0</version>
+    </dependency>
+
+  </dependencies>
+</project>
+"""
+        }
+
+    # ==========================
+    # FILE CREATION
+    # ==========================
+
+    for file_path, content in files_to_create.items():
+        full_path = os.path.join(project_dir, file_path)
+
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(content.strip())
+
+
+def create_project_structure(project_dir,tool, lang, fw, base_url, login_username, login_password):
     os.makedirs(project_dir, exist_ok=True)
-    base_folders = ["tests"]
+
+    # =============================
+    # Playwright
+    # =============================
+    if tool == "Playwright":
+
+        try:
+
+            st.info("Installing Playwright framework...")
+
+            lang_map = {
+                "TypeScript": "ts",
+                "JavaScript": "js",
+                "Python": "python",
+                "Java": "java",
+                "C#": "csharp"
+            }
+
+            selected_lang = lang_map.get(lang, "ts")
+
+            cmd = [
+                "npx",
+                "create-playwright@latest",
+                ".",
+                "--",
+                f"--lang={selected_lang}"
+            ]
+
+            process = subprocess.run(
+                cmd,
+                cwd=project_dir,
+                capture_output=True,
+                text=True
+            )
+
+            if process.returncode != 0:
+                st.error("Playwright installation failed")
+                st.code(process.stderr)
+                return False
+
+            st.success("Playwright framework created successfully!")
+            return True
+
+        except Exception as e:
+            st.error(f"Playwright setup error: {str(e)}")
+            return False
+
+    # =============================
+    # SELENIUM
+    # =============================
+    base_folders = []
+
     if lang == "Python":
         if fw == "Pytest":
-            base_folders += ["features", "fixtures", "steps"]
+            base_folders += ["tests", "config", "utilities", "testdata", "reports", "logs"]
         elif fw == "Behave":
-            base_folders += ["features", "steps", "environment"]
+            base_folders += ["features", "features/steps", "pages", "config", "utilities", "testdata", "reports",
+                             "logs"]
+    elif lang == "Java":
+        if fw == "Cucumber":
+            base_folders += ["src/test/resources", "src/test/java/steps"]
+        elif fw == "TestNG":
+            base_folders += ["src/test/resources", "src/test/java/steps"]
+
     for folder in base_folders:
         folder_path = os.path.join(project_dir, folder)
         os.makedirs(folder_path, exist_ok=True)
@@ -199,44 +372,135 @@ def create_project_structure(project_dir, lang, fw, base_url, login_username, lo
             f.write(f"BASE_URL={base_url}\n")
             f.write(f"LOGIN_USERNAME={login_username}\n")
             f.write(f"LOGIN_PASSWORD={login_password}\n")
+    create_static_framework_files(project_dir, tool, lang, fw)
 
 
 def handle_create_project():
-    with st.form("create_project_form"):
-        col1, col2, col3 = st.columns([1, 1, 1])
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 1])
+
         with col1:
             p_name = st.text_input("Project Name", help="Unique name for your project")
+
         with col2:
-            lang = st.selectbox("Language", ["Python", "Java", "C#"])
-        with col3:
-            fw_options = ["Pytest", "Behave"] if lang == "Python" else ["Cucumber", "TestNG"]
-            fw = st.selectbox("Framework", fw_options)
+            base_path = os.path.dirname(os.path.abspath(__file__))
+            p_path = st.text_input("Base Path", value=base_path, help="Root directory for projects")
 
         base_url = st.text_input("Enter Base URL")
+
         col1, col2 = st.columns([1, 1])
+
         with col1:
             login_username = st.text_input("Enter Username")
+
         with col2:
             login_password = st.text_input("Enter Password")
 
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        p_path = st.text_input("Base Path", value=base_path, help="Root directory for projects")
+        # =========================
+        # TOOL SELECTION
+        # =========================
 
-        submitted = st.form_submit_button("Create Project Structure")
-        if submitted and p_name.strip():
-            project_dir = os.path.join(p_path, p_name)
-            create_project_structure(project_dir, lang, fw, base_url, login_username, login_password)
-            db = get_db()
-            db.execute(
-                "INSERT INTO ProjectDetails (project_name, project_lang, project_fw, project_path, created_date) VALUES (?, ?, ?, ?, ?)",
-                (p_name, lang, fw, project_dir, datetime.now().strftime("%Y-%m-%d"))
+        col_tool, col_lang = st.columns(2)
+
+        with col_tool:
+            tool = st.selectbox(
+                "Step 1: Select Automation Tool",
+                ["-- Select Tool --", "Selenium", "Playwright"]
             )
+        with col_lang:
+            lang = None
+            fw = ""
+
+            # =========================
+            # SELENIUM LOGIC
+            # =========================
+
+            if tool == "Selenium":
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    lang = st.selectbox(
+                        "Step 2: Select Language",
+                        ["Python", "Java", "C#"]
+                    )
+
+                with col2:
+
+                    if lang == "Python":
+                        fw_options = ["Pytest", "Behave"]
+
+                    elif lang == "Java":
+                        fw_options = ["TestNG", "Cucumber"]
+
+                    else:
+                        fw_options = ["NUnit", "SpecFlow"]
+
+                    fw = st.selectbox(
+                        "Step 3: Select Framework",
+                        fw_options
+                    )
+
+            # =========================
+            # PLAYWRIGHT LOGIC
+            # =========================
+
+            elif tool == "Playwright":
+
+                lang = st.selectbox(
+                    "Step 2: Select Language",
+                    ["TypeScript", "JavaScript", "Java", "C#", "Python"]
+                )
+
+                fw = "Playwright Test"
+
+        # =========================
+        # CREATE BUTTON
+        # =========================
+
+        if st.button("Create Project Structure"):
+
+            if not p_name.strip():
+                st.error("Please enter a valid project name.")
+                return
+
+            project_dir = os.path.join(p_path, p_name)
+
+            create_project_structure(
+                project_dir,
+                tool,
+                lang,
+                fw,
+                base_url,
+                login_username,
+                login_password
+            )
+
+            db = get_db()
+
+            db.execute(
+                """
+                INSERT INTO ProjectDetails
+                (project_name, project_tool, project_lang, project_fw, project_path, created_date)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    p_name,
+                    tool,
+                    lang,
+                    fw,
+                    project_dir,
+                    datetime.now().strftime("%Y-%m-%d")
+                )
+            )
+
             db.commit()
+
             st.success(f"✅ Project '{p_name}' created successfully!")
+
             time.sleep(2)
+
             st.rerun()
-        elif submitted:
-            st.error("Please enter a valid project name.")
 
 
 def handle_select_project():
@@ -399,11 +663,7 @@ def handle_select_project():
 
         if uploaded_file is not None:
             import pandas as pd
-
-            # Read all sheets
             all_sheets = pd.read_excel(uploaded_file, sheet_name=None, header=0)
-
-            # Combine column 2 (element name), column 3 (element locator), column 4 (type) from all sheets
             for sheet_name, df in all_sheets.items():
                 if df.shape[1] >= 3:  # Ensure at least 3 columns exist
                     for _, row in df.iterrows():
@@ -423,7 +683,6 @@ def handle_select_project():
                     options=list(combined_data.keys())
                 )
 
-                # Display locators and types for selected elements
                 if selected_elements:
                     st.markdown("**Selected Element Locators:**")
 
@@ -433,14 +692,12 @@ def handle_select_project():
                         type_display = f" *(Type: {element_type})*" if element_type else ""
                         st.write(f"**{element}**{type_display}: `{locator}`")
 
-                        # Build locator_content with type
                         entry = f"{element} (Type: {element_type}): {locator}" if element_type else f"{element}: {locator}"
                         if i < len(selected_elements) - 1:
                             locator_content += f"{entry},\n"
                         else:
                             locator_content += f"{entry}\n"
 
-                    # Append locators to support_content in session state
                     st.session_state.support_content = support_content + "\nElement Locators:\n" + locator_content
             else:
                 st.warning("No valid data found in the uploaded file. Ensure columns 2, 3 and 4 have data.")
@@ -452,6 +709,7 @@ def handle_select_project():
         st.markdown("---")
         st.markdown(f"**Support Content collected**")
         masked_content = st.session_state.support_content
+        support_content = masked_content
         if login_password:
             masked_content = re.sub(
                 r'(Password:\s*)' + re.escape(login_password),
@@ -459,6 +717,8 @@ def handle_select_project():
                 masked_content
             )
         st.write(masked_content)
+
+        st.markdown("---")
 
         col1, col2 = st.columns([3, 1])
         with col1:
@@ -506,7 +766,6 @@ def handle_select_project():
             st.write(f"• **{proj['project_lang']}**")
             st.write(f"• **{proj['project_fw']}**")
     else:
-
         st.markdown("---")
         st.markdown("### ⏳ **Waiting for file selection...**")
         st.info("👆 **Choose a source above and select/upload a file to enable Generate button**")
@@ -524,24 +783,93 @@ def show_save_ui():
     folder_path = st.text_input("📁 Save to Folder:", value=default_path,
                                 help="Where to save the generated files")
 
-    st.markdown("**Files to generate:**")
-    for fname in files.keys():
-        st.write(f"• {fname}")
+    from datetime import datetime
+    st.markdown("**Generated Files:**")
+    timestamp = datetime.now().strftime("%d%m%y%H%M")
+    selected_files = {}
+    file_paths = {}
 
-    if st.button("💾 **SAVE ALL FILES**", type="primary", use_container_width=True):
-        if not folder_path.strip():
-            st.error("Please enter a valid folder path.")
-            return
-        saved, failed = save_files_to_folder(files, folder_path)
+    def extract_files_from_generated_test(content):
+        json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
+        if json_match:
+            json_str = json_match.group(1)
+        else:
+            json_match = re.search(r'(\{[\s\S]*\})', content)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                return None
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            return None
+
+    expanded_files = {}
+    for fname, content in files.items():
+        if "generated_test" in fname:
+            st.write("..................Received Content might be incorrect. Please read the AI comment given below.")
+            st.write(content)
+            extracted = extract_files_from_generated_test(content)
+            if extracted and isinstance(extracted, dict):
+                for extracted_fname, extracted_content in extracted.items():
+                    if isinstance(extracted_content, str):
+                        expanded_files[extracted_fname] = extracted_content
+            else:
+                st.warning(f"⚠️ Could not extract JSON from `{fname}`. Skipping.")
+        else:
+            expanded_files[fname] = content
+
+    for fname in expanded_files.keys():
+        #---Removed code for filename with timestamp
+        # name_parts = fname.rsplit(".", 1)
+        # if len(name_parts) == 2:
+        #     timestamped_name = f"{name_parts[0]}_{timestamp}.{name_parts[1]}"
+        # else:
+        #     timestamped_name = f"{fname}_{timestamp}"
+
+        timestamped_name = fname
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            checked = st.checkbox(timestamped_name, key=f"chk_{fname}", value=True)
+            selected_files[fname] = checked
+        with col2:
+            path_input = st.text_input(
+                "Save path",
+                value=folder_path.strip(),
+                key=f"path_{fname}",
+                label_visibility="collapsed",
+                placeholder=f"Folder path for {timestamped_name}"
+            )
+            file_paths[fname] = (path_input, timestamped_name)
+
+    any_selected = any(selected_files.values())
+    if st.button("💾 **SAVE SELECTED FILES**", type="primary", use_container_width=True, disabled=not any_selected):
+        saved, failed = [], []
+
+        for fname, is_checked in selected_files.items():
+            if not is_checked:
+                continue
+
+            dest_folder, ts_name = file_paths[fname]
+
+            if not dest_folder.strip():
+                failed.append(f"{ts_name}: No folder path provided.")
+                continue
+
+            single_file = {ts_name: expanded_files[fname]}  # Use expanded_files here
+            s, f = save_files_to_folder(single_file, dest_folder.strip())
+            saved.extend(s)
+            failed.extend(f)
+
         if saved:
-            st.success(f"✅ {len(saved)} files saved successfully!")
-
+            st.success(f"✅ {len(saved)} file(s) saved successfully!")
             for key in ["generated_result", "show_save_section", "selected_project"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.cache_data.clear()
             time.sleep(3)
             st.rerun()
+
         if failed:
             for error in failed:
                 st.error(f"❌ {error}")
